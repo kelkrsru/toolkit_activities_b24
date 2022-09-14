@@ -182,3 +182,17 @@ class ListB24(ObjB24):
                 'ELEMENT_ID': element_id,
             }
         ))
+
+
+class ImopenlineB24(ObjB24):
+    """Класс Открытых линий."""
+    def crm_chat_user_add(self, crm_entity_type, crm_entity, user_id):
+        """Метод добавляет пользователя в чат, полученный по CRM-сущности."""
+        return self._check_error(self.bx24.call(
+            'imopenlines.crm.chat.user.add',
+            {
+                'CRM_ENTITY_TYPE': crm_entity_type,
+                'CRM_ENTITY': crm_entity,
+                'USER_ID': user_id,
+            }
+        ))

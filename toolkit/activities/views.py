@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from core.bitrix24.bitrix24 import ActivityB24
+from core.bitrix24.bitrix24 import ActivityB24, ImopenlineB24
 from core.models import Portals
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -62,26 +62,29 @@ def operator_add(request):
     initial_data = _get_initial_data(request)
     portal, settings_portal = _create_portal(initial_data)
     _check_initial_data(portal, initial_data)
+    try:
+        line = ImopenlineB24(portal, 0)
+        result = line.crm_chat_user_add(
+            initial_data.get('crm_entity_type'),
+            initial_data.get('crm_entity'),
+            initial_data.get('user_id'),
+        )
+    except Exception as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка. Проверьте существование чата в CRM сущности.',
+            return_values={'result': f'Error: {ex.args[0]}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
     with open('/root/test.log', 'w', encoding='utf-8') as file:
-        file.write(json.dumps(initial_data))
-    # smart_process_code = _initial_smart_process(portal, initial_data)
-    # smart_process = SmartProcessB24(portal, 0)
-    # products = smart_process.get_all_products(smart_process_code,
-    #                                           smart_element_id)
-    # deal = DealB24(portal, deal_id)
-    # keys_for_del = ['id', 'ownerId', 'ownerType']
-    # for product in products:
-    #     for key in keys_for_del:
-    #         del product[key]
-    # deal.get_all_products()
-    # products += deal.products
-    # deal.set_products(products)
-    # _response_for_bp(
-    #     portal,
-    #     initial_data['event_token'],
-    #     'Успех. Товары скопированы.',
-    #     return_values={'result': f'Ok: {products = }'},
-    # )
+        file.write(json.dumps(result))
+    _response_for_bp(
+        portal,
+        initial_data['event_token'],
+        'Успех. Оператор добавлен в чат.',
+        return_values={'result': f'Ok: {result = }'},
+    )
     return HttpResponse(status=HTTPStatus.OK)
 
 
@@ -115,6 +118,7 @@ def _check_initial_data(portal, initial_data):
     """Method for check initial data."""
     try:
         initial_data['user_id'] = int(initial_data['user_id'])
+        initial_data['crm_entity'] = int(initial_data['crm_entity'])
     except Exception as ex:
         _response_for_bp(
             portal,
