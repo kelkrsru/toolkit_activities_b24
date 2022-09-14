@@ -12,6 +12,8 @@ DEBUG = os.getenv('DEBUG', default=False)
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', default='').split(' ')
 
+APP_NAME = os.getenv('APP_NAME', default='Приложение')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
