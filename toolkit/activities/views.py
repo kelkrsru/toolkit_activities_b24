@@ -58,11 +58,12 @@ def uninstall(request):
 @csrf_exempt
 def operator_add(request):
     """View for activity copy products."""
+
+    initial_data = _get_initial_data(request)
+    portal, settings_portal = _create_portal(initial_data)
+    _check_initial_data(portal, initial_data)
     with open('/root/test.log', 'w', encoding='utf-8') as file:
-        file.write(json.dumps(request.POST))
-    # initial_data: dict[str, any] = _get_initial_data(request)
-    # portal, settings_portal = _create_portal(initial_data)
-    # smart_element_id, deal_id = _check_initial_data(portal, initial_data)
+        file.write(json.dumps(initial_data))
     # smart_process_code = _initial_smart_process(portal, initial_data)
     # smart_process = SmartProcessB24(portal, 0)
     # products = smart_process.get_all_products(smart_process_code,
@@ -99,22 +100,21 @@ def _get_initial_data(request):
     """Method for get initial data from Post request."""
     if request.method != 'POST':
         return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+    user = request.POST.get('properties[user_id]')
+    user_id = user.split('_')[1] if 'user' in user else user
     return {
         'member_id': request.POST.get('auth[member_id]'),
         'event_token': request.POST.get('event_token'),
-        'smart_element_id': request.POST.get(
-            'properties[smart_element_id]') or 0,
-        'deal_id': request.POST.get('properties[deal_id]') or 0,
-        'document_type': request.POST.get('document_type[2]'),
+        'crm_entity_type': request.POST.get('properties[crm_entity_type]'),
+        'crm_entity': request.POST.get('properties[crm_entity]') or 0,
+        'user_id': user_id,
     }
 
 
 def _check_initial_data(portal, initial_data):
     """Method for check initial data."""
     try:
-        smart_element_id = int(initial_data['smart_element_id'])
-        deal_id = int(initial_data['deal_id'])
-        return smart_element_id, deal_id
+        initial_data['user_id'] = int(initial_data['user_id'])
     except Exception as ex:
         _response_for_bp(
             portal,
