@@ -89,9 +89,9 @@ def operator_add(request):
 @csrf_exempt
 def pause(request):
     """View for activity pause."""
-    initial_data = _get_initial_data_copy_products(request)
+    initial_data = _get_initial_data_pause(request)
     portal, settings_portal = _create_portal(initial_data)
-    _check_initial_data_copy_products(portal, initial_data)
+    _check_initial_data_pause(portal, initial_data)
     time.sleep(initial_data['pause'])
     _response_for_bp(
         portal,
