@@ -1,4 +1,5 @@
 import json
+import time
 from http import HTTPStatus
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -58,10 +59,9 @@ def uninstall(request):
 @csrf_exempt
 def operator_add(request):
     """View for activity copy products."""
-
-    initial_data = _get_initial_data(request)
+    initial_data = _get_initial_data_copy_products(request)
     portal, settings_portal = _create_portal(initial_data)
-    _check_initial_data(portal, initial_data)
+    _check_initial_data_copy_products(portal, initial_data)
     try:
         line = ImopenlineB24(portal, 0)
         result = line.crm_chat_user_add(
@@ -73,17 +73,30 @@ def operator_add(request):
         _response_for_bp(
             portal,
             initial_data['event_token'],
-            'Ошибка. Проверьте существование чата в CRM сущности.',
+            'Ошибка при добавлении в чат CRM сущности.',
             return_values={'result': f'Error: {ex.args[0]}'},
         )
         return HttpResponse(status=HTTPStatus.OK)
-    with open('/root/test.log', 'w', encoding='utf-8') as file:
-        file.write(json.dumps(result))
     _response_for_bp(
         portal,
         initial_data['event_token'],
         'Успех. Оператор добавлен в чат.',
         return_values={'result': f'Ok: {result = }'},
+    )
+    return HttpResponse(status=HTTPStatus.OK)
+
+
+@csrf_exempt
+def pause(request):
+    """View for activity pause."""
+    initial_data = _get_initial_data_copy_products(request)
+    portal, settings_portal = _create_portal(initial_data)
+    _check_initial_data_copy_products(portal, initial_data)
+    time.sleep(initial_data['pause'])
+    _response_for_bp(
+        portal,
+        initial_data['event_token'],
+        f'Успех. Пауза в {initial_data["pause"]} секунд.',
     )
     return HttpResponse(status=HTTPStatus.OK)
 
@@ -99,8 +112,8 @@ def _create_portal(initial_data):
         return HttpResponse(status=HTTPStatus.BAD_REQUEST)
 
 
-def _get_initial_data(request):
-    """Method for get initial data from Post request."""
+def _get_initial_data_copy_products(request):
+    """Method for get initial data from Post request activity copy products."""
     if request.method != 'POST':
         return HttpResponse(status=HTTPStatus.BAD_REQUEST)
     user = request.POST.get('properties[user_id]')
@@ -114,11 +127,36 @@ def _get_initial_data(request):
     }
 
 
-def _check_initial_data(portal, initial_data):
-    """Method for check initial data."""
+def _get_initial_data_pause(request):
+    """Method for get initial data from Post request activity pause."""
+    if request.method != 'POST':
+        return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+    return {
+        'member_id': request.POST.get('auth[member_id]'),
+        'event_token': request.POST.get('event_token'),
+        'pause': request.POST.get('properties[pause]'),
+    }
+
+
+def _check_initial_data_copy_products(portal, initial_data):
+    """Method for check initial data activity copy products."""
     try:
         initial_data['user_id'] = int(initial_data['user_id'])
         initial_data['crm_entity'] = int(initial_data['crm_entity'])
+    except Exception as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка. Проверьте входные данные.',
+            return_values={'result': f'Error: {ex.args[0]}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+
+
+def _check_initial_data_pause(portal, initial_data):
+    """Method for check initial data activity pause."""
+    try:
+        initial_data['pause'] = int(initial_data['pause'])
     except Exception as ex:
         _response_for_bp(
             portal,
