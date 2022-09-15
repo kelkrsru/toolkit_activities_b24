@@ -75,7 +75,7 @@ class DealB24(ObjB24):
             'crm.deal.update',
             {
                 'id': self.id,
-                'fields': {field_code: field_value},
+                'fields': {field_code: [field_value]},
             }
         ))
 
