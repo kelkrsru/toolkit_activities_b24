@@ -109,7 +109,7 @@ def field_update(request):
     _check_initial_data_field_update(portal, initial_data)
     try:
         deal = DealB24(portal, initial_data.get('deal_id'))
-        res = deal.update(initial_data.get('field_code'), initial_data.get(
+        result = deal.update(initial_data.get('field_code'), initial_data.get(
             'field_value'))
     except Exception as ex:
         _response_for_bp(
@@ -123,7 +123,8 @@ def field_update(request):
         portal,
         initial_data['event_token'],
         f'Успех. Полю в сделке {initial_data["field_code"]} присвоено '
-        f'новое значение {initial_data["field_value"]}. {res}',
+        f'новое значение {initial_data["field_value"]}.',
+        return_values={'result': f'Ok: {result}'},
     )
     return HttpResponse(status=HTTPStatus.OK)
 
