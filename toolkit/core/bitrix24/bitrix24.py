@@ -69,6 +69,16 @@ class DealB24(ObjB24):
             }
         ))
 
+    def update(self, field_code, field_value):
+        """Обновить поле в сделке."""
+        return self._check_error(self.bx24.call(
+            'crm.deal.update',
+            {
+                'id': self.id,
+                'fields': {field_code: field_value},
+            }
+        ))
+
 
 class QuoteB24(ObjB24):
     """Класс Предложение."""

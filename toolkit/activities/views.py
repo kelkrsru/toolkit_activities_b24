@@ -4,7 +4,7 @@ from http import HTTPStatus
 
 from django.core.exceptions import ObjectDoesNotExist
 
-from core.bitrix24.bitrix24 import ActivityB24, ImopenlineB24
+from core.bitrix24.bitrix24 import ActivityB24, ImopenlineB24, DealB24
 from core.models import Portals
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -101,6 +101,33 @@ def pause(request):
     return HttpResponse(status=HTTPStatus.OK)
 
 
+@csrf_exempt
+def field_update(request):
+    """View for activity field in deal update."""
+    initial_data = _get_initial_data_field_update(request)
+    portal, settings_portal = _create_portal(initial_data)
+    _check_initial_data_field_update(portal, initial_data)
+    try:
+        deal = DealB24(portal, initial_data.get('deal_id'))
+        deal.update(initial_data.get('field_code'), initial_data.get(
+            'field_value'))
+    except Exception as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка. Невозможно обновить поле в сделке.',
+            return_values={'result': f'Error: {ex.args[0]}'},
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+    _response_for_bp(
+        portal,
+        initial_data['event_token'],
+        f'Успех. Полю в сделке {initial_data["field_code"]} присвоено '
+        f'новое значение {initial_data["field_value"]}.',
+    )
+    return HttpResponse(status=HTTPStatus.OK)
+
+
 def _create_portal(initial_data):
     """Method for create portal."""
     try:
@@ -138,6 +165,20 @@ def _get_initial_data_pause(request):
     }
 
 
+def _get_initial_data_field_update(request):
+    """Method for get initial data from Post request activity field in deal
+    update."""
+    if request.method != 'POST':
+        return HttpResponse(status=HTTPStatus.BAD_REQUEST)
+    return {
+        'member_id': request.POST.get('auth[member_id]'),
+        'event_token': request.POST.get('event_token'),
+        'field_code': request.POST.get('properties[field_code]'),
+        'field_value': request.POST.get('properties[field_value]'),
+        'deal_id': request.POST.get('properties[deal_id]') or 0,
+    }
+
+
 def _check_initial_data_copy_products(portal, initial_data):
     """Method for check initial data activity copy products."""
     try:
@@ -157,6 +198,19 @@ def _check_initial_data_pause(portal, initial_data):
     """Method for check initial data activity pause."""
     try:
         initial_data['pause'] = int(initial_data['pause'])
+    except Exception as ex:
+        _response_for_bp(
+            portal,
+            initial_data['event_token'],
+            'Ошибка. Проверьте входные данные.',
+        )
+        return HttpResponse(status=HTTPStatus.OK)
+
+
+def _check_initial_data_field_update(portal, initial_data):
+    """Method for check initial data activity field in deal update."""
+    try:
+        initial_data['deal_id'] = int(initial_data['deal_id'])
     except Exception as ex:
         _response_for_bp(
             portal,
